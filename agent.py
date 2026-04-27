@@ -1,12 +1,26 @@
-
 # Install required packages if not already installed
 import subprocess
 subprocess.run(["pip", "install", "-U", "langchain-anthropic", "langchain-core", "langgraph", "langchain", "IPython"])
-
 from langchain.tools import tool
 from langchain.chat_models import init_chat_model
-
 import os
+
+#State imports
+from langchain.messages import AnyMessage
+from typing_extensions import TypedDict, Annotated
+import operator
+
+#Model nodes imports
+from langchain.messages import SystemMessage
+
+#Tool node imports
+from langchain.messages import ToolMessage
+
+#Logic imports
+from typing import Literal
+from langgraph.graph import StateGraph, START, END
+
+
 
 # Retrieve the API key from Colab secrets and set it as an environment variable
 os.environ["ANTHROPIC_API_KEY"] = "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"
@@ -17,7 +31,7 @@ model = init_chat_model(
 )
 
 
-# Define tools
+# Step 1: Define tools
 @tool
 def execute_shell_command(command: str):
     """Executes a given shell command and returns the output."""
@@ -34,20 +48,11 @@ tools_by_name = {tool.name: tool for tool in tools}
 model_with_tools = model.bind_tools(tools)
 
 # Step 2: Define state
-
-from langchain.messages import AnyMessage
-from typing_extensions import TypedDict, Annotated
-import operator
-
-
 class MessagesState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
     llm_calls: int
 
 # Step 3: Define model node
-from langchain.messages import SystemMessage
-
-
 def llm_call(state: dict):
     """LLM decides whether to call a tool or not"""
 
@@ -67,10 +72,6 @@ def llm_call(state: dict):
 
 
 # Step 4: Define tool node
-
-from langchain.messages import ToolMessage
-
-
 def tool_node(state: dict):
     """Performs the tool call"""
 
@@ -82,11 +83,6 @@ def tool_node(state: dict):
     return {"messages": result}
 
 # Step 5: Define logic to determine whether to end
-
-from typing import Literal
-from langgraph.graph import StateGraph, START, END
-
-
 # Conditional edge function to route to the tool node or end based upon whether the LLM made a tool call
 def should_continue(state: MessagesState) -> Literal["tool_node", END]:
     """Decide if we should continue the loop or stop based upon whether the LLM made a tool call"""
@@ -121,11 +117,6 @@ agent_builder.add_edge("tool_node", "llm_call")
 
 # Compile the agent
 agent = agent_builder.compile()
-
-
-from IPython.display import Image, display
-# Show the agent
-display(Image(agent.get_graph(xray=True).draw_mermaid_png()))
 
 # Invoke
 from langchain.messages import HumanMessage
