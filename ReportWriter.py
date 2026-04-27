@@ -5,8 +5,8 @@ CYB 332 Final Project
 
 """
 
-#not sure if the line below is correct?? tried to get a rough idea
-from agent import SESSION, log_event, save_session, TARGET_IP, AgentState, model
+#not sure if the line below is correct?? tried to get a rough idea of how it will connect to agent.py
+#from agent import SESSION, log_event, save_session, TARGET_IP, AgentState, model
 import json
 import time
 import operator
