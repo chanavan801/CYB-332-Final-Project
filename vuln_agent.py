@@ -7,6 +7,7 @@ from langchain.messages import HumanMessage, SystemMessage, AnyMessage
 
 import os
 
+os.environ["ANTHROPIC_API_KEY"] = "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"
 
 # 1. Load LLM (Claude)
 
