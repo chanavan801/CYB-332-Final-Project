@@ -5,12 +5,15 @@ from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
 from langchain.messages import HumanMessage, SystemMessage, AnyMessage
 
+import os
+
 
 # 1. Load LLM (Claude)
 
 model = init_chat_model(
     "claude-sonnet-4-6",
-    temperature=0
+    temperature=0,
+    api_key=os.environ["ANTHROPIC_API_KEY"]
 )
 
 # 2. Define state 
