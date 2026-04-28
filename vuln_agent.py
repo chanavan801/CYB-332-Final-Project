@@ -91,3 +91,15 @@ def run_vulnerability_agent(recon_text: str):
     })
 
     return result["messages"][-1].content
+
+# Temp local test
+if __name__ == "__main__":
+
+    fake_recon = """
+    PORT 21: vsftpd 2.3.4
+    PORT 22: OpenSSH 7.2p2
+    PORT 80: Apache 2.4.7
+    PORT 139: Samba smbd 3.X
+    """
+
+    print(run_vulnerability_agent(fake_recon))
