@@ -13,7 +13,7 @@ import os
 model = init_chat_model(
     "claude-sonnet-4-6",
     temperature=0,
-    api_key=os.environ["ANTHROPIC_API_KEY"]
+    api_key=os.environ.get("ANTHROPIC_API_KEY")
 )
 
 # 2. Define state 
