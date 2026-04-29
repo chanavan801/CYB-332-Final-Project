@@ -2,36 +2,39 @@
 agent 3
 vulnerability analyst
 CYB 332 Final Project
-
 """
 
-from typing_extensions import TypedDict, Annotated
 import operator
+from typing_extensions import TypedDict, Annotated
 
 from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
-from langchain.messages import HumanMessage, SystemMessage, AnyMessage
+from langchain.messages import HumanMessage, SystemMessage, AnyMessage, AIMessage
 
-import os
 
-os.environ["ANTHROPIC_API_KEY"] = "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"
-
-# 1. Load LLM (Claude)
+# =========================
+# 1. LOAD MODEL (NO API KEY HERE)
+# =========================
 
 model = init_chat_model(
-    "claude-sonnet-4-6",
-    temperature=0,
-    api_key=os.environ.get("ANTHROPIC_API_KEY")
+    "claude-3-sonnet-20240229",
+    temperature=0
 )
 
-# 2. Define state 
+
+# =========================
+# 2. DEFINE STATE
+# =========================
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
     llm_calls: int
+    agent_name: str
 
 
-# 3. SYSTEM PROMPT 
+# =========================
+# 3. SYSTEM PROMPT
+# =========================
 
 SYSTEM_PROMPT = """
 You are a vulnerability analyst.
@@ -62,48 +65,70 @@ Output format:
 }
 """
 
-# 4. LLM NODE 
 
-def llm_call(state: dict):
+# =========================
+# 4. LLM NODE
+# =========================
+
+def llm_call(state: AgentState):
+    """LLM call node"""
+
     response = model.invoke(
-        [
-            SystemMessage(content=SYSTEM_PROMPT)
-        ]
-        + state["messages"]
+        [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
     )
 
     return {
         "messages": [response],
-        "llm_calls": state.get("llm_calls", 0) + 1
+        "llm_calls": state.get("llm_calls", 0) + 1,
+        "agent_name": "VulnerabilityAnalyst",
     }
 
 
-# 5. BUILD GRAPH 
+# =========================
+# 5. BUILD GRAPH
+# =========================
 
-builder = StateGraph(AgentState)
+_builder = StateGraph(AgentState)
 
-builder.add_node("llm_call", llm_call)
+_builder.add_node("llm_call", llm_call)
 
-builder.add_edge(START, "llm_call")
-builder.add_edge("llm_call", END)
+_builder.add_edge(START, "llm_call")
+_builder.add_edge("llm_call", END)
 
-vuln_agent = builder.compile()
+vuln_agent = _builder.compile()
 
 
-# 6. RUN FUNCTION 
+# =========================
+# 6. HELPER: EXTRACT OUTPUT
+# =========================
 
-def run_vulnerability_agent(recon_text: str):
+def _get_last_ai_message(messages):
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and msg.content:
+            return msg.content if isinstance(msg.content, str) else str(msg.content)
+    return ""
+
+
+# =========================
+# 7. RUN FUNCTION
+# =========================
+
+def run_vulnerability_agent(recon_text: str) -> str:
+    """Runs the vulnerability analysis agent"""
 
     result = vuln_agent.invoke({
-        "messages": [
-            HumanMessage(content=recon_text)
-        ],
-        "llm_calls": 0
+        "messages": [HumanMessage(content=recon_text)],
+        "llm_calls": 0,
+        "agent_name": "VulnerabilityAnalyst",
     })
 
-    return result["messages"][-1].content
+    return _get_last_ai_message(result["messages"])
 
-# Temp local test
+
+# =========================
+# 8. LOCAL TEST
+# =========================
+
 if __name__ == "__main__":
 
     fake_recon = """
@@ -113,4 +138,5 @@ if __name__ == "__main__":
     PORT 139: Samba smbd 3.X
     """
 
+    print("\n[TEST] Running Vulnerability Analyst...\n")
     print(run_vulnerability_agent(fake_recon))
