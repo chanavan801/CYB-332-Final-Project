@@ -11,6 +11,8 @@ from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
 from langchain.messages import HumanMessage, SystemMessage, AnyMessage, AIMessage
 
+import os
+print("DEBUG API KEY:", os.getenv("ANTHROPIC_API_KEY"))
 
 # =========================
 # 1. LOAD MODEL (NO API KEY HERE)
