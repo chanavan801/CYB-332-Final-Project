@@ -18,7 +18,7 @@ print("DEBUG API KEY:", os.getenv("ANTHROPIC_API_KEY"))
 # 1. LOAD MODEL 
 
 model = init_chat_model(
-    "claude-3-sonnet-20240229",
+    "claude-sonnet-4-6",
     temperature=0
 )
 
