@@ -14,9 +14,8 @@ from langchain.messages import HumanMessage, SystemMessage, AnyMessage, AIMessag
 import os
 print("DEBUG API KEY:", os.getenv("ANTHROPIC_API_KEY"))
 
-# =========================
-# 1. LOAD MODEL (NO API KEY HERE)
-# =========================
+
+# 1. LOAD MODEL 
 
 model = init_chat_model(
     "claude-3-sonnet-20240229",
@@ -24,9 +23,9 @@ model = init_chat_model(
 )
 
 
-# =========================
+
 # 2. DEFINE STATE
-# =========================
+
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
@@ -34,9 +33,8 @@ class AgentState(TypedDict):
     agent_name: str
 
 
-# =========================
 # 3. SYSTEM PROMPT
-# =========================
+
 
 SYSTEM_PROMPT = """
 You are a vulnerability analyst.
@@ -68,9 +66,8 @@ Output format:
 """
 
 
-# =========================
 # 4. LLM NODE
-# =========================
+
 
 def llm_call(state: AgentState):
     """LLM call node"""
@@ -86,9 +83,9 @@ def llm_call(state: AgentState):
     }
 
 
-# =========================
+
 # 5. BUILD GRAPH
-# =========================
+
 
 _builder = StateGraph(AgentState)
 
@@ -100,9 +97,9 @@ _builder.add_edge("llm_call", END)
 vuln_agent = _builder.compile()
 
 
-# =========================
+
 # 6. HELPER: EXTRACT OUTPUT
-# =========================
+
 
 def _get_last_ai_message(messages):
     for msg in reversed(messages):
@@ -110,10 +107,7 @@ def _get_last_ai_message(messages):
             return msg.content if isinstance(msg.content, str) else str(msg.content)
     return ""
 
-
-# =========================
 # 7. RUN FUNCTION
-# =========================
 
 def run_vulnerability_agent(recon_text: str) -> str:
     """Runs the vulnerability analysis agent"""
@@ -127,9 +121,8 @@ def run_vulnerability_agent(recon_text: str) -> str:
     return _get_last_ai_message(result["messages"])
 
 
-# =========================
 # 8. LOCAL TEST
-# =========================
+
 
 if __name__ == "__main__":
 
