@@ -1,23 +1,28 @@
 """
-agent 4
-report writer
-CYB 332 Final Project
+This program is meant to take the results provided 
+from other agents and generate a report on any findings.
 
+CYB 332 Final Project
+Agent 4
 """
 
-#not sure if the line below is correct?? tried to get a rough idea of how it will connect to agent.py
-#from agent import SESSION, log_event, save_session, TARGET_IP, AgentState, model
 import json
 import time
 import operator
 from pathlib import Path
-from typing import Literal
 from typing_extensions import TypedDict, Annotated
 
+from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
 from langchain.messages import AnyMessage, HumanMessage, SystemMessage, AIMessage
-from langgraph.graph import StateGraph, START, END
+from foundation import SESSION, TargetedIP, logger, saveSes
+model = init_chat_model("claude-sonnet-4-6", temperature=0)
 
+
+class agentState(TypedDict):
+    messages: Annotated[list[AnyMessage], operator.add]
+    llm_calls: int
+    agent_name: str
 
 #replace and fix things as needed!! Some things might need to be changed to work with
 #agent.py
@@ -50,35 +55,27 @@ Respond with ONLY a JSON object:
         }
     ],
 
-    "riskSummary": {"Critical": 0, "High": 0, "Medium": 0, "Low": 0},
+    "riskSummary": {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0},
     "conclusion": "<2-3 sentence overall security posture>"
 
 }
 """
 
-#langgraph stuff
-
-def llm_call(state: AgentState):
-    """LLM call node - no tools needed for report writing."""
-    log_event("ReportWriter", "llm_call", {"call number": state.get("llm_calls", 0) + 1})
-    response = model.invoke([SystemMessage(content=REPORT_WRITER_PROMPT)] + state["messages"])
-    log_event("ReportWriter", "llm_response", {"finish_reason": "stop"})
-    return {
-        "messages": [response],
-        "llm_calls": state.get("llm_calls", 0) + 1,
-        "agent_name": "ReportWriter",
-    }
+def llm_call(state: agentState):
+    logger("ReportWriter", llm_call, {"call": state.get("llm_calls", 0) + 1})
+    response= model.invoke([SystemMessage(content=REPORT_WRITER_PROMPT)] + state["messages"])
+    return {"messages": [response], "llm_calls": state.get("llm_calls", 0) + 1, "agent_name": "ReportWriter"}
 
 
 #building agent not sure if this works? tried to write everything in my code based on 
 #agent.py
 
-_builder = StateGraph(AgentState)
+_builder = StateGraph(agentState)
 _builder.add_node("llm_call", llm_call)
 _builder.add_edge(START, "llm_call")
 _builder.add_edge("llm_call", END)
 
-report_agent =_builder.compile()
+reportAgent =_builder.compile()
 
 
 #Helper for JSON
@@ -90,13 +87,11 @@ def _parse_json(text: str) -> dict:
         clean = parts[1] if len(parts) > 1 else clean
         if clean.startswith("json"):
             clean = clean[4:]
-            return json.loads(clean.strip().rstrip("'").strip())
+            return json.loads(clean.strip())
         
-
-
-#save markdown report
-
-def save_markdown_report(report: dict) -> str:
+        
+def saveReport(report: dict) -> str:
+    rs= report.get("riskSum",{})
     lines = [
         f"# {report.get('reportTitle', 'Penetration Test Report')}",
         f"\n**Date:** {report.get('date', time.strftime('%Y-%m-%d'))}",
@@ -112,14 +107,13 @@ def save_markdown_report(report: dict) -> str:
         "|----------|-------|",
     ]
 
-    rs = report.get("riskSummary", {})
-    for sev in ["Critical", "High", "Medium", "Low"]:
+    for sev in ["Critical", "High", "Medium", "Low", "Informational"]:
         lines.append(f"| {sev} | {rs.get(sev, 0)} |")
         lines.append("\n## Findings\n")
         for f in report.get("findings", []):
             lines += [
                 f"### {f.get('id', '')} - {f.get('title', '')} **[{f.get('severity', '')}]**\n",
-                f"**Affected:** '{f.get('affected_component', '')}'\n",
+                f"**Affected:** '{f.get('affectedComponent', '')}'\n",
                 f"**Description:** {f.get('description', '')}\n",
                 f"**Evidence:**\n'''\n{f.get('evidence','')}\n'''\n",
                 f"**Remediation:** {f.get('remediation', '')}\n",
@@ -138,27 +132,27 @@ def save_markdown_report(report: dict) -> str:
         
 
 
-def run_report_writer() -> dict:
+def runWriter() -> dict:
     """
     Reads SESSION['recon'] and SESSION['vulnerability_analysis'],
     invokes the ReportWriter agent, and writes results back to SESSION.
     Returns the parsed report dict.
     """
-    recon_data = SESSION.get("recon", {})
-    vuln_data = SESSION.get("vulnerability_analysis", {})
+    reconData = SESSION.get("recon", {})
+    vulnData = SESSION.get("vulnAnly", {})
 
-    if not recon_data: 
+    if not reconData: 
         raise ValueError("[ReportWriter] No recon data in SESSION.")
-    if not vuln_data:
+    if not vulnData:
         raise ValueError("[ReportWriter] No vulnerability analysis in SESSION.")
     
     print("\n[4/4] ReportWriter - generating final report...")
 
-    result = report_agent.invoke({
+    result = reportAgent.invoke({
         "messages": [HumanMessage(content=(
-            f"Write the full pen-test report for target {TARGET_IP}.\n\n"
-            f"RECON FINDINGS:\n{json.dumps(recon_data, indent=2)}\n\n"
-            f"VULNERABILITY ANALYSIS:\n{json.dumps(vuln_data, indent=2)}"
+            f"Write the full pen-test report for target {TargetedIP}.\n\n"
+            f"RECON FINDINGS:\n{json.dumps(reconData, indent=2)}\n\n"
+            f"VULNERABILITY ANALYSIS:\n{json.dumps(vulnData, indent=2)}"
         ))],
         "llm_calls":  0,
         "agent_name": "ReportWriter",
@@ -167,26 +161,26 @@ def run_report_writer() -> dict:
 
     # Extract text from last AI message
     # need to test stuff 
-    report_text = ""
+    reportCont = ""
     for msg in reversed(result["messages"]):
         if isinstance(msg, AIMessage) and msg.content:
-            report_text = msg.content if isinstance(msg.content, str) else str(msg.content)
+            reportCont = msg.content if isinstance(msg.content, str) else str(msg.content)
             break
 
     try: 
-     report_data = _parse_json(report_text)
+     reportData = _parse_json(reportCont)
     except Exception:
-        print("[ERROR] ReportWriter returned invalid JSON. Raw output: \n", report_text)
+        print("[ERROR] ReportWriter returned invalid JSON. Raw output: \n", reportCont)
         raise
 
-    SESSION["final_report"] = report_data
-    save_session()
+    SESSION["finalReport"] = reportData
+    saveSes()
 
-    md_path = save_markdown_report(report_data)
-    print(f" Report saved to {md_path}")
+    mdPath = saveReport(reportData)
+    print(f" Report saved to {mdPath}")
     # not sure if I'm printing things right?
 
-    return report_data
+    return reportData
 
 
             
