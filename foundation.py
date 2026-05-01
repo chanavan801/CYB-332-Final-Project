@@ -1,8 +1,6 @@
 """
-
 This program acts as the shared platform for all of the agents.
 CYB 332 Final Project
-
 """
 
 import json
