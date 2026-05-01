@@ -20,10 +20,10 @@ from langchain.messages import ToolMessage
 from typing import Literal
 from langgraph.graph import StateGraph, START, END
 
+#import helper file 
+from foundation import SESSION, targetedIP, logger, saveSes
 
 
-# Retrieve the API key from Colab secrets and set it as an environment variable
-os.environ["ANTHROPIC_API_KEY"] = "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"
 
 model = init_chat_model(
     "claude-sonnet-4-6",
