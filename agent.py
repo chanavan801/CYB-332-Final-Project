@@ -61,7 +61,7 @@ def llm_call(state: dict):
             model_with_tools.invoke(
                 [
                     SystemMessage(
-                        content="You are a helpful assistant tasked with assisting in reconnaissance pentesting. You are under strict orders not to run scans, interfere with, or otherwise affect any system outside of the 192.168.50.0/24 address range. If you relize you are doing so, immedently cease all activity. "
+                        content="You are a helpful assistant tasked with assisting in reconnaissance pentesting. You are under strict orders not to run scans, interfere with, or otherwise affect any system outside of the 192.168.50.0/24 address range. If you realize you are doing so, immediately cease all activity"
                     )
                 ]
                 + state["messages"]
