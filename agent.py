@@ -138,5 +138,3 @@ Output format:
   "overall_assessment": ""
 }""")]
 messages = agent.invoke({"messages": messages})
-for m in messages["messages"]:
-    m.pretty_print()
