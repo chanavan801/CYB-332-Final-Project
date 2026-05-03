@@ -53,7 +53,13 @@ You're a professional penetration test report writer.
 You will receive reconnaissance and a vulnerability analysis.
 Write a structured and professional penetration test report.
 
-Respond with ONLY a JSON object:
+ONLY reference services, ports, and vulnerabilities that appear in the data provided to you by the recieved reconnissance and vulnerability analysis.
+Do NOT invent CVEs, exploits, or vulnerabilities that are not in the input.
+Do NOT add findings that were not identified by the vulnerability analysis agent or the reconnaissance agent.
+
+
+Respond with ONLY a JSON object.
+Do NOT include any text before or after the JSON.
 
 {
 
@@ -132,6 +138,9 @@ def _parse_json(text: str) -> dict:
     
 
     # strip markdown fences
+    # when I tried to have it not do that in the prompt, it didn't always work.
+    #instead of trying to get that prompt to work, I decided it will be better to add code to get rid
+    #of the markdown fence things instead. Better to guarnentee it then hope the prompt will listen. 
     if "```" in clean:
         parts = clean.split("```")
         for part in parts:
@@ -152,7 +161,9 @@ def _parse_json(text: str) -> dict:
     return json.loads(clean.strip())
 
 
-#Formats the file and makes it readable       
+#Formats the file and makes it readable
+# using f-strings to help make this easier. I'm pretty sure its meant to make things more readable.
+# This can be double checked
     
 def saveReport(report: dict) -> str:
     rs= report.get("riskSum",{})
@@ -205,7 +216,7 @@ def saveReport(report: dict) -> str:
 #may need to be checked/adjusted again later
 def runWriter() -> dict:
     """
-    Reads session from the recon agent and from the vulnerability analysis agent,
+    Reads session output from the recon agent and from the vulnerability analysis agent,
     invokes the ReportWriter agent, and writes results back to SESSION.
     Returns the parsed report dict.
     """
@@ -268,6 +279,8 @@ def runWriter() -> dict:
 #-------------------------------------------------------------------------------
 
 #code to test the functionality of the report generation.
+# I'm not sure if this is allowed to stay in or if we can comment it out for the final version?
+# tested it and it does work. 
 if __name__ == "__main__":
     from foundation import SESSION, setTarget
     
