@@ -114,6 +114,9 @@ def _get_last_ai_message(messages):
 def run_vulnerability_agent(recon_text: str) -> str:
     """Runs the vulnerability analysis agent"""
 
+    if not recon_text:
+        raise ValueError("No reconnaissance output was provided to Agent 3.")
+
     result = vuln_agent.invoke({
         "messages": [HumanMessage(content=recon_text)],
         "llm_calls": 0,
@@ -121,19 +124,3 @@ def run_vulnerability_agent(recon_text: str) -> str:
     })
 
     return _get_last_ai_message(result["messages"])
-
-
-# 8. LOCAL TEST
-
-
-if __name__ == "__main__":
-
-    fake_recon = """
-    PORT 21: vsftpd 2.3.4
-    PORT 22: OpenSSH 7.2p2
-    PORT 80: Apache 2.4.7
-    PORT 139: Samba smbd 3.X
-    """
-
-    print("\n[TEST] Running Vulnerability Analyst...\n")
-    print(run_vulnerability_agent(fake_recon))
