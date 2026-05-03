@@ -163,54 +163,51 @@ def _parse_json(text: str) -> dict:
 
 #Formats the file and makes it readable
 # using f-strings to help make this easier. I'm pretty sure its meant to make things more readable.
-# This can be double checked
-    
+# This can be double checked    
 def saveReport(report: dict) -> str:
-    rs= report.get("riskSum",{})
+    rs = report.get("riskSum", {})
     lines = [
         f"# {report.get('reportTitle', 'Penetration Test Report')}",
         f"\n**Date:** {report.get('date', time.strftime('%Y-%m-%d'))}",
-        "---\n", 
+        "---\n",
         "## Executive Summary\n",
         report.get("summary", "") + "\n",
         "## Scope\n",
         report.get("scope", "") + "\n",
-        "## Methodology\n", 
+        "## Methodology\n",
         report.get("methodology", "") + "\n",
         "## Risk Summary\n",
         "| Severity | Count |",
         "|----------|-------|",
     ]
 
+    # creating and filling the risk table 
     for sev in ["Critical", "High", "Medium", "Low"]:
         lines.append(f"| {sev} | {rs.get(sev, 0)} |")
-        lines.append("\n## Findings\n")
 
-        for f in report.get("findings", []):
-            lines += [
-                f"### {f.get('id', '')} - {f.get('title', '')} **[{f.get('severity', '')}]**\n",
-                f"**Affected:** '{f.get('affectedComponent', '')}'\n",
-                f"**Description:** {f.get('description', '')}\n",
-                f"**Evidence:**\n'''\n{f.get('evidence','')}\n'''\n",
-                f"**Remediation:** {f.get('remediation', '')}\n",
+    # findings section of report
+    lines.append("\n## Findings\n")
+    for f in report.get("findings", []):
+        lines += [
+            f"### {f.get('id', '')} - {f.get('title', '')} **[{f.get('severity', '')}]**\n",
+            f"**Affected:** {f.get('affectedComponent', '')}\n",
+            f"**Description:** {f.get('description', '')}\n",
+            f"**Evidence:**\n```\n{f.get('evidence', '')}\n```\n",
+            f"**Remediation:** {f.get('remediation', '')}\n",
+        ]
+        if f.get("references"):
+            lines.append(f"**References:** {', '.join(f['references'])}\n")
+        lines.append("---\n")
 
-            ]
+    # This should make the conclusion
+    lines += ["\n## Conclusion\n", report.get("conclusion", "") + "\n"]
 
-            if f.get("references"):
-                lines.append(f"**References:** {', '.join(f['references'])}\n")
-            lines.append("---\n")
-            
-
-            lines += [
-                "## Conclusion\n", report.get("conclusion", "") + "\n"
-                ]
-
-
-            Path("output").mkdir(exist_ok=True)
-            path = f"output/report_{SESSION['sessionID']}.md"
-            with open(path, "w") as fh:
-                fh.write("\n".join(lines))
-            return path
+    # The code below should write the file, hopeuflly this is correcT? may need to be tested just to be sure. 
+    Path("output").mkdir(exist_ok=True)
+    path = f"output/report_{SESSION['sessionID']}.md"
+    with open(path, "w") as fh:
+        fh.write("\n".join(lines))
+    return path
         
 
 #may need to be checked/adjusted again later
