@@ -120,7 +120,7 @@ agent = agent_builder.compile()
 
 # Invoke
 from langchain.messages import HumanMessage
-messages = [HumanMessage(content="Identify how many devices are on the 192.168.50.0/24 range. Tell me what commands you used.")]
+messages = [HumanMessage(content="Use Curl and Nmap to identify how many devices are on the 192.168.50.0/24 range. Tell me what commands you used.")]
 messages = agent.invoke({"messages": messages})
 for m in messages["messages"]:
     m.pretty_print()
