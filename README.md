@@ -6,7 +6,8 @@ git clone https://github.com/chanavan801/CYB-332-Final-Project
 ```
 Step 2 - On the Kali machine, run the following commands:
 ```
-sudo apt update && sudo apt install python3-venv -y
+sudo apt update
+sudo apt install python3-venv -y
 python3 -m venv lc-env
 source lc-env/bin/activate
 pip install langchain-anthropic langchain-core langgraph langchain
